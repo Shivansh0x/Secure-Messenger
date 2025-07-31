@@ -65,14 +65,12 @@ function LoginForm({ onLogin }) {
         </button>
       </form>
       <button
-        className="mt-4 text-center text-sm text-blue-400 hover:text-blue-200 transition">
-        <span
-          onClick={toggleMode}
-          className="text-blue-400 hover:underline cursor-pointer">
-          {isLoginMode
-            ? "Don't have an account? Register"
-            : "Already have an account? Login"}
-        </span>
+        onClick={toggleMode}
+        className="mt-4 text-sm text-blue-400 hover:text-blue-200 transition"
+      >
+        {isLoginMode
+          ? "Don't have an account? Register"
+          : "Already have an account? Login"}
       </button>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
