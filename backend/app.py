@@ -158,6 +158,14 @@ def chat_between_users(user1, user2):
     chat.sort(key=lambda m: m["timestamp"])  # optional: chronological order
     return jsonify(chat), 200
 
+@app.route("/users/<username>", methods=["GET"])
+def check_user_exists(username):
+    users = load_json(USERS_FILE, {})
+    if username in users:
+        return jsonify({"exists": True}), 200
+    else:
+        return jsonify({"error": "User not found"}), 404
+
 
 @app.route('/contacts/<username>', methods=['GET'])
 def get_contacts(username):

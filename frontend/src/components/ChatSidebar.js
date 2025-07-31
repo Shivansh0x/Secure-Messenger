@@ -12,15 +12,28 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       .catch((err) => console.error("Failed to fetch contacts", err));
   }, [username]);
 
-  const handleStartNewChat = () => {
-    const newUser = prompt("Enter username to start a chat with:");
-    if (!newUser || newUser.trim() === "") return;
-    const cleaned = newUser.trim();
-    if (!contacts.includes(cleaned)) {
-      setContacts((prev) => [...prev, cleaned]);
+const handleStartNewChat = async () => {
+  const newUser = prompt("Enter username to start a chat with:");
+  if (!newUser || newUser.trim() === "") return;
+
+  const cleaned = newUser.trim();
+
+  try {
+    // ✅ Check with backend if user exists
+    const res = await axios.get(`https://secure-messenger-backend.onrender.com/users/${cleaned}`);
+    
+    if (res.status === 200) {
+      if (!contacts.includes(cleaned)) {
+        setContacts((prev) => [...prev, cleaned]);
+      }
+      onSelectUser(cleaned); // open chat
     }
-    onSelectUser(cleaned);
-  };
+  } catch (err) {
+    // ❌ User not found
+    alert("Error: User does not exist.");
+  }
+};
+
 
   return (
     <div className="flex flex-col h-full w-64 bg-gray-900 text-white border-r border-gray-700">
