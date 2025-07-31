@@ -47,6 +47,7 @@ function LoginForm({ onLogin }) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
+          className="w-full bg-gray-800 text-white placeholder-gray-400 p-2 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         /><br />
         <input
           type="password"
@@ -54,6 +55,7 @@ function LoginForm({ onLogin }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          className="w-full bg-gray-800 text-white placeholder-gray-400 p-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         /><br />
         <button
           type="submit"
