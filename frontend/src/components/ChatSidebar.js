@@ -6,16 +6,16 @@ const socket = io("https://secure-messenger-backend.onrender.com");
 
 function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers}) {
   const [contacts, setContacts] = useState([]);
-  const [onlineUsers, setOnlineUsers] = useState([]);
+ // const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     // Notify server this user is online
     socket.emit("user_connected", { username });
 
     // Listen for updates
-    socket.on("update_online_users", (data) => {
-      setOnlineUsers(data);
-    });
+    // socket.on("update_online_users", (data) => {
+    //   setOnlineUsers(data);
+    // });
 
     // Load chat contacts
     axios

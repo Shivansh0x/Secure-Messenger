@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import {io} from "socket.io-client";
+import { io } from "socket.io-client";
 const socket = io("https://secure-messenger-backend.onrender.com"); // your backend URL
 
 function LoginForm({ onLogin }) {
@@ -55,13 +55,22 @@ function LoginForm({ onLogin }) {
           onChange={(e) => setPassword(e.target.value)}
           required
         /><br />
-        <button type="submit">{isLoginMode ? "Login" : "Register"}</button>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow-md transition"
+        >
+          {isLoginMode ? "Login" : "Register"}
+        </button>
       </form>
-      <button onClick={toggleMode} style={{ marginTop: "10px" }}>
+      <button
+        onClick={toggleMode}
+        className="mt-4 text-sm text-blue-400 hover:text-blue-200 transition"
+      >
         {isLoginMode
           ? "Don't have an account? Register"
           : "Already have an account? Login"}
       </button>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
