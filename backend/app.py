@@ -159,4 +159,4 @@ if __name__ == "__main__":
         save_json(USERS_FILE, {})
     if not os.path.exists(MESSAGES_FILE):
         save_json(MESSAGES_FILE, [])
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    socketio.run(app, host='0.0.0.0', port=5000)
