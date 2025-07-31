@@ -22,12 +22,13 @@ function OnlineUsersSidebar({ username }) {
     <div style={{ position: "fixed", right: 10, top: 60, width: 200, background: "#eee", padding: 10 }}>
       <h4>Online Contacts</h4>
       <ul>
-        {onlineUsers.map((user, idx) => (
-          <li key={idx}>
-            🟢 {user}
-          </li>
-        ))}
+        {onlineUsers
+          .filter(user => user !== username)
+          .map((user, idx) => (
+            <li key={idx}>🟢 {user}</li>
+          ))}
       </ul>
+
     </div>
   );
 }
