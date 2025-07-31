@@ -1,13 +1,14 @@
 # app.py  –  Simple Flask backend for Secure Messenger
+import eventlet
+eventlet.monkey_patch()
 import os
 import json
 from datetime import datetime
 from flask_socketio import SocketIO, emit
-import eventlet
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-eventlet.monkey_patch()
+
 # ------------------------------------------------------------------------
 # 1.  App & CORS
 # ------------------------------------------------------------------------
