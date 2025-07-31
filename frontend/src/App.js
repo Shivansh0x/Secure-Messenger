@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import LoginForm from "./components/LoginForm";
-import LogoutButton from "./components/LogoutButton";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatWindow from "./components/ChatWindow";
 import { io } from "socket.io-client";
