@@ -3,6 +3,7 @@ import MessageForm from "./components/MessageForm";
 import Inbox from "./components/Inbox";
 import LogoutButton from "./components/LogoutButton";
 import LoginForm from "./components/LoginForm";
+import ContactsSidebar from "./components/ContactsSidebar";
 
 function App() {
   // get stored user from browser
@@ -25,6 +26,7 @@ function App() {
           <MessageForm sender={username} />
           <Inbox username={username} />
           <LogoutButton onLogout={handleLogout} />
+          <ContactsSidebar username={username} />
         </>
       ) : (
         <LoginForm onLogin={setUsername} />
