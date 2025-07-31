@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000"); // or your render backend URL
+const socket = io("https://secure-messenger-backend.onrender.com"); // or your render backend URL
 
 function OnlineUsersSidebar({ username }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
