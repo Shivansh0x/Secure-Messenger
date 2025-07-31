@@ -38,7 +38,7 @@ function LoginForm({ onLogin }) {
   };
 
   return (
-    <div>
+    <div className="max-w-sm mx-auto mt-10 p-6 bg-gray-900 border border-gray-700 rounded-lg shadow-lg">
       <h2>{isLoginMode ? "Login" : "Register"}</h2>
       <form onSubmit={handleSubmit}>
         <input
