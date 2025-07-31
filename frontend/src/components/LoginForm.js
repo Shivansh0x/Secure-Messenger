@@ -11,7 +11,7 @@ function LoginForm({ onLogin }) {
     e.preventDefault();
     const endpoint = isLoginMode ? "/login" : "/register";
 
-    axios.post(`http://127.0.0.1:5000${endpoint}`, {
+    axios.post(`https://secure-messenger-backend.onrender.com${endpoint}`, {
       username,
       password,
     })

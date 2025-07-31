@@ -22,7 +22,7 @@ function MessageForm({ sender }) {
         recipient,
         message: encryptedMessage,
       };
-      await axios.post("http://127.0.0.1:5000/send", payload);
+      await axios.post("https://secure-messenger-backend.onrender.com/send", payload);
       alert("Message sent!");
       setMessage("");
       setRecipient("");

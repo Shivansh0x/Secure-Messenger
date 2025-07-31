@@ -25,7 +25,7 @@ function Inbox({ username }) {
   useEffect(() => {
     async function fetchInbox() {
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/inbox/${username}`);
+        const response = await axios.get(`https://secure-messenger-backend.onrender.com/inbox/${username}`);
         setMessages(response.data);
       } catch (error) {
         console.error("Failed to fetch inbox:", error);
