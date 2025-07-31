@@ -4,7 +4,7 @@ import io from "socket.io-client";
 
 const socket = io("https://secure-messenger-backend.onrender.com");
 
-function ChatSidebar({ username, onSelectUser, selectedUser }) {
+function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers}) {
   const [contacts, setContacts] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
 

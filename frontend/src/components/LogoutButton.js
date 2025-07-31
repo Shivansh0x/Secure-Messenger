@@ -2,12 +2,15 @@ import React from "react";
 
 function LogoutButton({ onLogout }) {
   const handleLogout = () => {
-    localStorage.removeItem("username"); // clear the stored login info
-    onLogout(); // tell the app we logged out
+    localStorage.removeItem("username");
+    onLogout();
   };
 
   return (
-    <button onClick={handleLogout}>
+    <button
+      onClick={handleLogout}
+      className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded shadow-md transition"
+    >
       Logout
     </button>
   );
