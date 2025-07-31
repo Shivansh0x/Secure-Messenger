@@ -3,7 +3,7 @@ import MessageForm from "./components/MessageForm";
 import Inbox from "./components/Inbox";
 import LogoutButton from "./components/LogoutButton";
 import LoginForm from "./components/LoginForm";
-import OnlineUsersSidebar from "./components/ContactsSidebar";
+import OnlineUsersSidebar from "./components/OnlineUsersSidebarSidebar";
 
 function App() {
   // get stored user from browser
