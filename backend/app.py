@@ -15,7 +15,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)                     
 socketio = SocketIO(app, cors_allowed_origins="*")
-online_users = set()
+online_users = {}
 
 USERS_FILE    = "users.json"
 MESSAGES_FILE = "messages.json"
@@ -130,21 +130,38 @@ def inbox(username):
 
 @socketio.on('connect')
 def handle_connect():
-    print("Client connected")
+    pass  # connection established, but no user info yet
 
 @socketio.on('user_connected')
-def user_connected(data):
-    username = data.get("username")
+def handle_user_connected(data):
+    username = data.get('username')
     if username:
-        online_users.add(username)
-        emit("online_users", list(online_users), broadcast=True)
+        online_users[username] = request.sid
+        emit('update_online_users', list(online_users.keys()), broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    # No username directly on disconnect. Consider token/session tracking for real use.
-    print("Client disconnected")
-    emit('online_users', list(online_users), broadcast=True)
-    # For demo: Don't remove from online_users without session
+    for user, sid in list(online_users.items()):
+        if sid == request.sid:
+            del online_users[user]
+            break
+    emit('update_online_users', list(online_users.keys()), broadcast=True)
+
+@app.route('/contacts/<username>', methods=['GET'])
+def get_contacts(username):
+    messages = load_json(MESSAGES_FILE, [])
+    user_messages = [
+        msg for msg in messages
+        if msg['sender'] == username or msg['recipient'] == username
+    ]
+    contacts = set()
+    for msg in user_messages:
+        if msg['sender'] != username:
+            contacts.add(msg['sender'])
+        if msg['recipient'] != username:
+            contacts.add(msg['recipient'])
+    return jsonify(list(contacts))
+
 
 @app.route("/")
 def home():

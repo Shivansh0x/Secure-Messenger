@@ -1,39 +1,53 @@
 import React, { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
+import axios from "axios";
 
-const socket = io("https://secure-messenger-backend.onrender.com"); // or your render backend URL
+const socket = io("https://secure-messenger-backend.onrender.com"); // your backend URL
 
 function OnlineUsersSidebar({ username }) {
+  const [contacts, setContacts] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-useEffect(() => {
-  if (!username) return;
+  useEffect(() => {
+    // Notify backend user is online
+    socket.emit("user_connected", { username });
 
-  socket.emit("user_connected", { username });
+    // Listen for updates
+    socket.on("update_online_users", (data) => {
+      setOnlineUsers(data);
+    });
 
-  const handleOnlineUsers = (users) => {
-    setOnlineUsers(users);
-  };
+    // Fetch actual contacts from backend
+    axios
+      .get(`https://secure-messenger-backend.onrender.com/contacts/${username}`)
+      .then((res) => setContacts(res.data))
+      .catch((err) => console.error("Failed to fetch contacts", err));
 
-  socket.on("online_users", handleOnlineUsers);
-
-  return () => {
-    socket.off("online_users", handleOnlineUsers);
-  };
-}, [username]);
-
+    return () => {
+      socket.disconnect();
+    };
+  }, [username]);
 
   return (
-    <div style={{ position: "fixed", right: 10, top: 60, width: 200, background: "#eee", padding: 10 }}>
-      <h4>Online Contacts</h4>
+    <div style={{ position: "absolute", right: 0, top: 100, width: 200, padding: 10, backgroundColor: "#f0f0f0" }}>
+      <h4>Contacts</h4>
       <ul>
-        {onlineUsers
-          .filter(user => user !== username)
-          .map((user, idx) => (
-            <li key={idx}>🟢 {user}</li>
-          ))}
+        {contacts.map((user, idx) => (
+          <li key={idx}>
+            {user}{" "}
+            <span
+              style={{
+                height: 10,
+                width: 10,
+                backgroundColor: onlineUsers.includes(user) ? "green" : "gray",
+                borderRadius: "50%",
+                display: "inline-block",
+                marginLeft: 5,
+              }}
+            ></span>
+          </li>
+        ))}
       </ul>
-
     </div>
   );
 }
