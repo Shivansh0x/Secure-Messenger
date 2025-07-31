@@ -34,20 +34,25 @@ function App() {
     };
   }, [username]);
 
-  // Request browser notification permission on load
+  // Ask for browser notification permission once
   useEffect(() => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
 
-  // Listen for incoming messages to show browser notification
+  // Listen for incoming messages and show browser notification
   useEffect(() => {
     const handleIncomingMessage = (message) => {
-      if (message.recipient === username && message.sender !== username) {
+      if (
+        message.recipient === username &&
+        message.sender !== username &&
+        document.visibilityState !== "visible"
+      ) {
         if (Notification.permission === "granted") {
           new Notification(`Message from ${message.sender}`, {
             body: message.message,
+            icon: "/chat-icon.png" // optional, or remove this line
           });
         }
       }
@@ -65,7 +70,6 @@ function App() {
       <h1 className="text-2xl font-bold p-4 bg-gray-800 border-b border-gray-700">
         Secure Messenger
       </h1>
-
       {username ? (
         <div className="flex flex-1 overflow-hidden">
           <ChatSidebar
@@ -90,7 +94,11 @@ function App() {
                     }`}
                   ></span>
                 </div>
-                <ChatWindow username={username} recipient={selectedUser} />
+                <ChatWindow
+                  username={username}
+                  recipient={selectedUser}
+                  socket={socket} // make sure this is passed to ChatWindow
+                />
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-400">
