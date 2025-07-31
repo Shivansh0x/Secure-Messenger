@@ -68,9 +68,9 @@ function App() {
             ) : (
               <p className="text-gray-400">Select a user from the sidebar to start chatting.</p>
             )}
-            <div className="mt-auto">
+            {/* <div className="mt-auto">
               <LogoutButton onLogout={handleLogout} />
-            </div>
+            </div> */}
           </div>
         </div>
       ) : (
