@@ -15,18 +15,19 @@ function LoginForm({ onLogin }) {
       username,
       password,
     })
-    .then((response) => {
-      localStorage.setItem("username", username);
-      onLogin(username);
-    })
-    .catch((error) => {
-      console.error(`${isLoginMode ? "Login" : "Registration"} failed:`, error);
-      setError(
-        isLoginMode
-          ? "Login failed. Please check your credentials."
-          : "Registration failed. Username may already exist."
-      );
-    });
+      .then((response) => {
+        localStorage.setItem("username", username);
+        onLogin(username);
+        socket.emit("login", username);
+      })
+      .catch((error) => {
+        console.error(`${isLoginMode ? "Login" : "Registration"} failed:`, error);
+        setError(
+          isLoginMode
+            ? "Login failed. Please check your credentials."
+            : "Registration failed. Username may already exist."
+        );
+      });
   };
 
   const toggleMode = () => {

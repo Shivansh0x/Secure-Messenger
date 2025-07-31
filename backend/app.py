@@ -147,6 +147,8 @@ def handle_disconnect():
             break
     emit('update_online_users', list(online_users.keys()), broadcast=True)
 
+
+
 @app.route('/contacts/<username>', methods=['GET'])
 def get_contacts(username):
     messages = load_json(MESSAGES_FILE, [])
