@@ -6,17 +6,22 @@ const socket = io("https://secure-messenger-backend.onrender.com"); // or your r
 function OnlineUsersSidebar({ username }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-  useEffect(() => {
-    socket.emit("user_connected", { username });
+useEffect(() => {
+  if (!username) return;
 
-    socket.on("online_users", (users) => {
-      setOnlineUsers(users);
-    });
+  socket.emit("user_connected", { username });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [username]);
+  const handleOnlineUsers = (users) => {
+    setOnlineUsers(users);
+  };
+
+  socket.on("online_users", handleOnlineUsers);
+
+  return () => {
+    socket.off("online_users", handleOnlineUsers);
+  };
+}, [username]);
+
 
   return (
     <div style={{ position: "fixed", right: 10, top: 60, width: 200, background: "#eee", padding: 10 }}>
