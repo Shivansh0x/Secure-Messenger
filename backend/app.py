@@ -143,6 +143,7 @@ def user_connected(data):
 def handle_disconnect():
     # No username directly on disconnect. Consider token/session tracking for real use.
     print("Client disconnected")
+    emit('online_users', list(online_users), broadcast=True)
     # For demo: Don't remove from online_users without session
 
 @app.route("/")
