@@ -147,6 +147,16 @@ def handle_disconnect():
             break
     emit('update_online_users', list(online_users.keys()), broadcast=True)
 
+@app.route("/chat/<user1>/<user2>", methods=["GET"])
+def chat_between_users(user1, user2):
+    messages = load_json(MESSAGES_FILE, [])
+    chat = [
+        m for m in messages
+        if (m["sender"] == user1 and m["recipient"] == user2) or
+           (m["sender"] == user2 and m["recipient"] == user1)
+    ]
+    chat.sort(key=lambda m: m["timestamp"])  # optional: chronological order
+    return jsonify(chat), 200
 
 
 @app.route('/contacts/<username>', methods=['GET'])

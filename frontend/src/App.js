@@ -4,6 +4,10 @@ import Inbox from "./components/Inbox";
 import LogoutButton from "./components/LogoutButton";
 import LoginForm from "./components/LoginForm";
 import OnlineUsersSidebar from "./components/OnlineUsersSidebar";
+import "./index.css";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
 
 function App() {
   // get stored user from browser
@@ -19,6 +23,10 @@ function App() {
   return (
     <div>
       <h1>Secure Messenger</h1>
+      <h1 className="text-4xl font-bold text-green-400 underline">
+  Tailwind Works!
+</h1>
+
 
       {username ? (
         <>
