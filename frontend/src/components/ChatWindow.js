@@ -55,17 +55,15 @@ function ChatWindow({ username, recipient }) {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-4 mb-2">
+    <div className="flex flex-col h-full bg-gray-950">
+      {/* Message List */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
         {messages.map((msg, idx) => {
           const isMine = msg.sender === username;
           return (
             <div
               key={idx}
-              className={`flex ${
-                isMine ? "justify-end" : "justify-start"
-              } px-2`}
+              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
             >
               <div
                 className={`max-w-xs px-4 py-2 rounded-lg ${
@@ -82,11 +80,11 @@ function ChatWindow({ username, recipient }) {
             </div>
           );
         })}
-        <div ref={chatEndRef}></div>
+        <div ref={chatEndRef} />
       </div>
 
-      {/* Fixed Message Input */}
-      <div className="sticky bottom-0 bg-gray-950 pt-2">
+      {/* Fixed Bottom Input Bar */}
+      <div className="border-t border-gray-700 p-2">
         <div className="flex">
           <input
             type="text"
