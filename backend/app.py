@@ -2,15 +2,19 @@
 import os
 import json
 from datetime import datetime
-
+from flask_socketio import SocketIO, emit
+import eventlet
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+eventlet.monkey_patch()
 # ------------------------------------------------------------------------
 # 1.  App & CORS
 # ------------------------------------------------------------------------
 app = Flask(__name__)
-CORS(app)                       #  <- allows requests from React (localhost:3000)
+CORS(app)                     
+socketio = SocketIO(app, cors_allowed_origins="*")
+online_users = set()
 
 USERS_FILE    = "users.json"
 MESSAGES_FILE = "messages.json"
@@ -122,6 +126,27 @@ def inbox(username):
     messages = load_json(MESSAGES_FILE, [])
     user_msgs = [m for m in messages if m["recipient"] == username]
     return jsonify(user_msgs), 200
+
+@socketio.on('connect')
+def handle_connect():
+    print("Client connected")
+
+@socketio.on('user_connected')
+def user_connected(data):
+    username = data.get("username")
+    if username:
+        online_users.add(username)
+        emit("online_users", list(online_users), broadcast=True)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    # No username directly on disconnect. Consider token/session tracking for real use.
+    print("Client disconnected")
+    # For demo: Don't remove from online_users without session
+
+@app.route("/")
+def home():
+    return "SocketIO Server Running"
 
 
 # ------------------------------------------------------------------------
