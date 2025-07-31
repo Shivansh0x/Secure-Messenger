@@ -5,47 +5,43 @@ import CryptoJS from "crypto-js";
 function Inbox({ username }) {
   const [messages, setMessages] = useState([]);
 
-  const secretKey = "my-secret"; // Must match encryption key used in MessageForm
-
-  const decrypt = (encryptedText) => {
+  const fetchMessages = async () => {
     try {
-      const bytes = CryptoJS.AES.decrypt(encryptedText, secretKey);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      return decrypted || "(empty)";
+      const response = await axios.get(`http://127.0.0.1:5000/inbox/${username}`);
+      const secretKey = "my-secret"; // same key used in MessageForm
+
+      const decryptedMessages = response.data.map((msg) => ({
+        ...msg,
+        decrypted: CryptoJS.AES.decrypt(msg.message, secretKey).toString(CryptoJS.enc.Utf8),
+      }));
+
+      setMessages(decryptedMessages);
     } catch (err) {
-      return "(decryption failed)";
+      console.error("Failed to fetch inbox:", err);
     }
   };
 
-  const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
-
+  // Set up polling
   useEffect(() => {
-    async function fetchInbox() {
-      try {
-        const response = await axios.get(`https://secure-messenger-backend.onrender.com/inbox/${username}`);
-        setMessages(response.data);
-      } catch (error) {
-        console.error("Failed to fetch inbox:", error);
-      }
-    }
-    fetchInbox();
+    fetchMessages(); // load once on mount
+
+    const interval = setInterval(fetchMessages, 5000); // every 5 seconds
+
+    return () => clearInterval(interval); // clean up when component unmounts
   }, [username]);
 
   return (
     <div>
-      <h2>Inbox</h2>
+      <h3>Inbox</h3>
       {messages.length === 0 ? (
-        <p>No messages.</p>
+        <p>No messages yet.</p>
       ) : (
         <ul>
           {messages.map((msg, index) => (
             <li key={index}>
               <strong>From:</strong> {msg.sender} <br />
-              <strong>Time:</strong> {formatDate(msg.timestamp)} <br />
-              <strong>Decrypted:</strong> {decrypt(msg.message)} <br /><br />
+              <strong>Decrypted Message:</strong> {msg.decrypted} <br />
+              <strong>Time:</strong> {msg.timestamp}
             </li>
           ))}
         </ul>
