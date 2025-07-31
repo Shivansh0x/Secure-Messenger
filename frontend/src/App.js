@@ -14,18 +14,20 @@ function App() {
 
   // Notify backend of online user
   useEffect(() => {
+    // Always listen to updates — even before login
+    socket.on("update_online_users", (data) => {
+      setOnlineUsers(data);
+    });
+
     if (username) {
       socket.emit("user_connected", { username });
-
-      socket.on("update_online_users", (data) => {
-        setOnlineUsers(data);
-      });
     }
 
     return () => {
       socket.disconnect();
     };
   }, [username]);
+
 
   const handleLogout = () => {
     localStorage.removeItem("username");
@@ -57,8 +59,8 @@ function App() {
                   </h2>
                   <span
                     className={`h-3 w-3 rounded-full ${onlineUsers.includes(selectedUser)
-                        ? "bg-green-400"
-                        : "bg-gray-500"
+                      ? "bg-green-400"
+                      : "bg-gray-500"
                       }`}
                   ></span>
                 </div>
