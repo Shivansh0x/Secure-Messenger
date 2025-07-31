@@ -3,3 +3,5 @@ flask_cors
 pycryptodome
 flask-socketio
 eventlet
+Flask-SQLAlchemy
+mysqlclient 

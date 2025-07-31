@@ -1,200 +1,155 @@
-# app.py  –  Simple Flask backend for Secure Messenger
-import eventlet
-eventlet.monkey_patch()
+# app.py – Flask backend with MySQL (Railway) replacing JSON files
+
 import os
-import json
 from datetime import datetime
-from flask_socketio import SocketIO, emit
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
+import pymysql
 
+pymysql.install_as_MySQLdb()
 
-# ------------------------------------------------------------------------
-# 1.  App & CORS
-# ------------------------------------------------------------------------
+# ────── App Setup ──────
 app = Flask(__name__)
-CORS(app)                     
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# ────── MySQL Config (Railway) ──────
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL') or \
+    'mysql+pymysql://root:uMdiqLfnvXorOmXEbXTITJUMXlCkdkoI@switchback.proxy.rlwy.net:46141/railway'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# ────── Online Users ──────
 online_users = {}
 
-USERS_FILE    = "users.json"
-MESSAGES_FILE = "messages.json"
+# ────── Models ──────
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    password = db.Column(db.String(128), nullable=False)
 
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(64), nullable=False)
+    recipient = db.Column(db.String(64), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ------------------------------------------------------------------------
-# 2.  Helper functions  (load/save JSON)
-# ------------------------------------------------------------------------
-def load_json(path, default):
-    if not os.path.exists(path):
-        return default
-    with open(path, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return default
-
-
-def save_json(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-
-
-# ------------------------------------------------------------------------
-# 3.  User Registration  (POST /register)
-# ------------------------------------------------------------------------
+# ────── Routes ──────
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
-
-    users = load_json(USERS_FILE, {})
-
-    if username in users:
+    if User.query.filter_by(username=username).first():
         return jsonify({"error": "Username already exists"}), 409
-
-    users[username] = password              # (plain text for demo only!)
-    save_json(USERS_FILE, users)
-
+    new_user = User(username=username, password=password)
+    db.session.add(new_user)
+    db.session.commit()
     return jsonify({"message": "User registered"}), 200
 
-
-# ------------------------------------------------------------------------
-# 4.  User Login  (POST /login)
-# ------------------------------------------------------------------------
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-
-    users = load_json(USERS_FILE, {})
-
-    if username not in users or users[username] != password:
+    user = User.query.filter_by(username=username).first()
+    if not user or user.password != password:
         return jsonify({"error": "Invalid credentials"}), 401
-
-    # For now we just say "OK" (no JWT yet)
     return jsonify({"message": "Login successful"}), 200
 
-
-# ------------------------------------------------------------------------
-# 5.  Send Message  (POST /send)
-# ------------------------------------------------------------------------
-@app.route('/send', methods=['POST'])
+@app.route("/send", methods=["POST"])
 def send_message():
-    data = request.get_json()
-    sender = data['sender']
-    recipient = data['recipient']
-    message = data['message']
-
-    # ✅ Check recipient exists
-    with open('users.json', 'r') as f:
-        users = json.load(f)
-    if recipient not in users:
+    data = request.json
+    sender = data["sender"]
+    recipient = data["recipient"]
+    message = data["message"]
+    if not User.query.filter_by(username=recipient).first():
         return jsonify({"status": "error", "message": "Recipient does not exist."}), 400
-
-    # Add timestamp to message
-    timestamp = datetime.now().isoformat()
-    new_msg = {
-        "sender": sender,
-        "recipient": recipient,
-        "message": message,
-        "timestamp": timestamp
-    }
-
-    with open('messages.json', 'r+') as f:
-        try:
-            messages = json.load(f)
-        except json.JSONDecodeError:
-            messages = []
-        messages.append(new_msg)
-        f.seek(0)
-        json.dump(messages, f, indent=2)
-        f.truncate()
-
+    new_msg = Message(sender=sender, recipient=recipient, message=message)
+    db.session.add(new_msg)
+    db.session.commit()
     return jsonify({"status": "success"})
-
-
-
-# ------------------------------------------------------------------------
-# 6.  Inbox  (GET /inbox/<username>)
-# ------------------------------------------------------------------------
-@app.route("/inbox/<username>", methods=["GET"])
-def inbox(username):
-    messages = load_json(MESSAGES_FILE, [])
-    user_msgs = [m for m in messages if m["recipient"] == username]
-    return jsonify(user_msgs), 200
-
-@socketio.on('connect')
-def handle_connect():
-    pass  # connection established, but no user info yet
-
-@socketio.on('user_connected')
-def handle_user_connected(data):
-    username = data.get('username')
-    if username:
-        online_users[username] = request.sid
-        emit('update_online_users', list(online_users.keys()), broadcast=True)
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    for user, sid in list(online_users.items()):
-        if sid == request.sid:
-            del online_users[user]
-            break
-    emit('update_online_users', list(online_users.keys()), broadcast=True)
 
 @app.route("/chat/<user1>/<user2>", methods=["GET"])
 def chat_between_users(user1, user2):
-    messages = load_json(MESSAGES_FILE, [])
-    chat = [
-        m for m in messages
-        if (m["sender"] == user1 and m["recipient"] == user2) or
-           (m["sender"] == user2 and m["recipient"] == user1)
-    ]
-    chat.sort(key=lambda m: m["timestamp"])  # optional: chronological order
-    return jsonify(chat), 200
+    messages = Message.query.filter(
+        ((Message.sender == user1) & (Message.recipient == user2)) |
+        ((Message.sender == user2) & (Message.recipient == user1))
+    ).order_by(Message.timestamp).all()
+    return jsonify([
+        {
+            "sender": m.sender,
+            "recipient": m.recipient,
+            "message": m.message,
+            "timestamp": m.timestamp.isoformat()
+        }
+        for m in messages
+    ])
+
+@app.route("/inbox/<username>", methods=["GET"])
+def inbox(username):
+    messages = Message.query.filter_by(recipient=username).order_by(Message.timestamp).all()
+    return jsonify([
+        {
+            "sender": m.sender,
+            "recipient": m.recipient,
+            "message": m.message,
+            "timestamp": m.timestamp.isoformat()
+        }
+        for m in messages
+    ])
 
 @app.route("/users/<username>", methods=["GET"])
 def check_user_exists(username):
-    users = load_json(USERS_FILE, {})
-    if username in users:
-        return jsonify({"exists": True}), 200
-    else:
-        return jsonify({"error": "User not found"}), 404
+    user = User.query.filter_by(username=username).first()
+    return jsonify({"exists": True}) if user else (jsonify({"error": "User not found"}), 404)
 
-
-@app.route('/contacts/<username>', methods=['GET'])
+@app.route("/contacts/<username>", methods=["GET"])
 def get_contacts(username):
-    messages = load_json(MESSAGES_FILE, [])
-    user_messages = [
-        msg for msg in messages
-        if msg['sender'] == username or msg['recipient'] == username
-    ]
+    messages = Message.query.filter(
+        (Message.sender == username) | (Message.recipient == username)
+    ).all()
     contacts = set()
-    for msg in user_messages:
-        if msg['sender'] != username:
-            contacts.add(msg['sender'])
-        if msg['recipient'] != username:
-            contacts.add(msg['recipient'])
+    for msg in messages:
+        if msg.sender != username:
+            contacts.add(msg.sender)
+        if msg.recipient != username:
+            contacts.add(msg.recipient)
     return jsonify(list(contacts))
-
 
 @app.route("/")
 def home():
     return "SocketIO Server Running"
 
+# ────── SocketIO Events ──────
+@socketio.on("connect")
+def handle_connect():
+    pass
 
-# ------------------------------------------------------------------------
-# 7.  Run the server
-# ------------------------------------------------------------------------
+@socketio.on("user_connected")
+def handle_user_connected(data):
+    username = data.get("username")
+    if username:
+        online_users[username] = request.sid
+        emit("update_online_users", list(online_users.keys()), broadcast=True)
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    for user, sid in list(online_users.items()):
+        if sid == request.sid:
+            del online_users[user]
+            break
+    emit("update_online_users", list(online_users.keys()), broadcast=True)
+
+# ────── Init Tables ──────
+with app.app_context():
+    db.create_all()
+
+# ────── Run ──────
 if __name__ == "__main__":
-    # Ensure storage files exist
-    if not os.path.exists(USERS_FILE):
-        save_json(USERS_FILE, {})
-    if not os.path.exists(MESSAGES_FILE):
-        save_json(MESSAGES_FILE, [])
-    socketio.run(app, host='0.0.0.0', port=5000)
+    socketio.run(app, host="0.0.0.0", port=5000)
