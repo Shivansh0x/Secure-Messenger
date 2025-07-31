@@ -14,24 +14,30 @@ function App() {
 
   // Notify backend of online user
   useEffect(() => {
+    // Always listen for online users (set up once)
+    const handleOnlineUsersUpdate = (data) => {
+      setOnlineUsers(data);
+    };
+    socket.on("update_online_users", handleOnlineUsersUpdate);
+
+    // Re-emit user_connected when socket reconnects (optional enhancement)
+    socket.on("connect", () => {
+      if (username) {
+        socket.emit("user_connected", { username });
+      }
+    });
+
+    // Emit user_connected on initial login
     if (username) {
       socket.emit("user_connected", { username });
-
-      socket.on("update_online_users", (data) => {
-        setOnlineUsers(data);
-      });
     }
 
+    // Clean up listeners only (NOT the socket connection!)
     return () => {
-      socket.disconnect();
+      socket.off("update_online_users", handleOnlineUsersUpdate);
+      socket.off("connect");
     };
   }, [username]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    setUsername(null);
-    setSelectedUser(null);
-  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white font-sans">
@@ -57,8 +63,8 @@ function App() {
                   </h2>
                   <span
                     className={`h-3 w-3 rounded-full ${onlineUsers.includes(selectedUser)
-                        ? "bg-green-400"
-                        : "bg-gray-500"
+                      ? "bg-green-400"
+                      : "bg-gray-500"
                       }`}
                   ></span>
                 </div>
