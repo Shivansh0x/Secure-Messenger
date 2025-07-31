@@ -6,8 +6,6 @@ function ChatWindow({ username, recipient }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const chatEndRef = useRef(null);
-  const chatContainerRef = useRef(null);
-  const [autoScroll, setAutoScroll] = useState(true);
   const secretKey = "my-secret";
 
   useEffect(() => {
@@ -17,25 +15,8 @@ function ChatWindow({ username, recipient }) {
   }, [username, recipient]);
 
   useEffect(() => {
-    if (autoScroll) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, autoScroll]);
-
-  useEffect(() => {
-    const container = chatContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const threshold = 100; // px
-      const distanceFromBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight;
-      setAutoScroll(distanceFromBottom < threshold);
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const fetchMessages = async () => {
     try {
@@ -68,7 +49,6 @@ function ChatWindow({ username, recipient }) {
       });
       setNewMessage("");
       fetchMessages();
-      setAutoScroll(true); // re-enable scroll for new message
     } catch (err) {
       console.error("Send failed:", err);
     }
@@ -77,10 +57,7 @@ function ChatWindow({ username, recipient }) {
   return (
     <div className="flex flex-col h-full">
       {/* Scrollable Message List */}
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-2"
-      >
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((msg, idx) => {
           const isMine = msg.sender === username;
           return (
@@ -90,7 +67,9 @@ function ChatWindow({ username, recipient }) {
             >
               <div
                 className={`max-w-xs px-4 py-2 rounded-lg ${
-                  isMine ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"
+                  isMine
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 text-gray-100"
                 }`}
               >
                 <div className="text-sm">{decrypt(msg.message)}</div>
