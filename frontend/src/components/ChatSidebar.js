@@ -15,12 +15,19 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
 
   const handleStartNewChat = async () => {
     const newUser = prompt("Enter username to start a chat with:");
-    if (!newUser || newUser.trim() === "" || newUser.trim() === username) return;
+    if (
+      !newUser ||
+      newUser.trim() === "" ||
+      newUser.trim().toLowerCase() === username.toLowerCase() // ✅ case-insensitive
+    )
+      return;
 
     const cleaned = newUser.trim();
 
     try {
-      const res = await axios.get(`https://secure-messenger-backend.onrender.com/users/${cleaned}`);
+      const res = await axios.get(
+        `https://secure-messenger-backend.onrender.com/users/${cleaned}`
+      );
 
       if (res.status === 200) {
         if (!contacts.includes(cleaned)) {
@@ -32,6 +39,7 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       alert("User does not exist.");
     }
   };
+
 
   return (
     <div
