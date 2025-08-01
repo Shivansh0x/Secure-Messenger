@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import axios from "axios";
 import LogoutButton from "./LogoutButton";
 
-function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
-  const [contacts, setContacts] = useState([]);
+function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contacts, setContacts }) {
+
 
   useEffect(() => {
     if (!username) return;
@@ -11,45 +11,46 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       .get(`https://secure-messenger-backend.onrender.com/contacts/${username}`)
       .then((res) => setContacts(res.data))
       .catch((err) => console.error("Failed to fetch contacts", err));
-  }, [username]);
+  }, [username, setContacts]); // ✅ added setContacts here
 
-const handleStartNewChat = async () => {
-  const input = prompt("Enter username to start a chat with:");
-  if (!input || input.trim() === "") return;
 
-  const cleaned = input.trim();
-  const cleanedLower = cleaned.toLowerCase();
-  const usernameLower = username.toLowerCase();
+  const handleStartNewChat = async () => {
+    const input = prompt("Enter username to start a chat with:");
+    if (!input || input.trim() === "") return;
 
-  // 🚫 Prevent chatting with yourself
-  if (cleanedLower === usernameLower) return;
+    const cleaned = input.trim();
+    const cleanedLower = cleaned.toLowerCase();
+    const usernameLower = username.toLowerCase();
 
-  // 🔍 Check if user already exists in contacts (case-insensitive)
-  const existingContact = contacts.find(
-    (u) => u.toLowerCase() === cleanedLower
-  );
+    // 🚫 Prevent chatting with yourself
+    if (cleanedLower === usernameLower) return;
 
-  if (existingContact) {
-    onSelectUser(existingContact); // ✅ Open with correct case
-    return;
-  }
-
-  try {
-    const res = await axios.get(
-      `https://secure-messenger-backend.onrender.com/users/${cleaned}`
+    // 🔍 Check if user already exists in contacts (case-insensitive)
+    const existingContact = contacts.find(
+      (u) => u.toLowerCase() === cleanedLower
     );
 
-    if (res.status === 200 && res.data.exists) {
-      const trueCasedUsername = res.data.username || cleaned; // from DB
-
-      // ✅ Add to sidebar using correct case
-      setContacts((prev) => [...prev, trueCasedUsername]);
-      onSelectUser(trueCasedUsername);
+    if (existingContact) {
+      onSelectUser(existingContact); // ✅ Open with correct case
+      return;
     }
-  } catch (err) {
-    alert("User does not exist.");
-  }
-};
+
+    try {
+      const res = await axios.get(
+        `https://secure-messenger-backend.onrender.com/users/${cleaned}`
+      );
+
+      if (res.status === 200 && res.data.exists) {
+        const trueCasedUsername = res.data.username || cleaned; // from DB
+
+        // ✅ Add to sidebar using correct case
+        setContacts((prev) => [...prev, trueCasedUsername]);
+        onSelectUser(trueCasedUsername);
+      }
+    } catch (err) {
+      alert("User does not exist.");
+    }
+  };
 
   return (
     <div

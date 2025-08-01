@@ -10,6 +10,7 @@ function App() {
   const [username, setUsername] = useState(localStorage.getItem("username"));
   const [selectedUser, setSelectedUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [contacts, setContacts] = useState([]);
 
   // Notify backend of online user
   useEffect(() => {
@@ -45,13 +46,24 @@ function App() {
   useEffect(() => {
     const handleIncomingMessage = (message) => {
       if (message.recipient === username && message.sender !== username) {
+        // 🟢 Show browser notification
         if (Notification.permission === "granted") {
           new Notification(`Message from ${message.sender}`, {
-            body: message.message,
+            body: "(New message)",
           });
         }
+
+        // 🟢 Auto-add sender to contacts if not present
+        setContacts((prev) => {
+          const existing = prev.map((u) => u.toLowerCase());
+          if (!existing.includes(message.sender.toLowerCase())) {
+            return [...prev, message.sender];
+          }
+          return prev;
+        });
       }
     };
+
 
     socket.on("receive_message", handleIncomingMessage);
 
@@ -73,7 +85,10 @@ function App() {
             selectedUser={selectedUser}
             onSelectUser={setSelectedUser}
             onlineUsers={onlineUsers}
+            contacts={contacts}
+            setContacts={setContacts}
           />
+
 
           <div className="flex-1 flex flex-col">
             {selectedUser ? (
@@ -83,11 +98,10 @@ function App() {
                     Chat with {selectedUser}
                   </h2>
                   <span
-                    className={`h-3 w-3 rounded-full ${
-                      onlineUsers.includes(selectedUser)
-                        ? "bg-green-400"
-                        : "bg-gray-500"
-                    }`}
+                    className={`h-3 w-3 rounded-full ${onlineUsers.includes(selectedUser)
+                      ? "bg-green-400"
+                      : "bg-gray-500"
+                      }`}
                   ></span>
                 </div>
                 <ChatWindow username={username} recipient={selectedUser} />

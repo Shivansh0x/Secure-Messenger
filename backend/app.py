@@ -68,12 +68,24 @@ def send_message():
     sender = data["sender"]
     recipient = data["recipient"]
     message = data["message"]
+
     if not User.query.filter_by(username=recipient).first():
         return jsonify({"status": "error", "message": "Recipient does not exist."}), 400
+
     new_msg = Message(sender=sender, recipient=recipient, message=message)
     db.session.add(new_msg)
     db.session.commit()
+
+    # ✅ Emit via Socket.IO
+    socketio.emit("receive_message", {
+        "sender": sender,
+        "recipient": recipient,
+        "message": message,
+        "timestamp": new_msg.timestamp.isoformat() + "Z"
+    })
+
     return jsonify({"status": "success"})
+
 
 @app.route("/chat/<user1>/<user2>", methods=["GET"])
 def chat_between_users(user1, user2):
