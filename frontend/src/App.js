@@ -3,6 +3,7 @@ import LoginForm from "./components/LoginForm";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatWindow from "./components/ChatWindow";
 import { io } from "socket.io-client";
+import CryptoJS from "crypto-js";
 
 const socket = io("https://secure-messenger-backend.onrender.com");
 
@@ -13,6 +14,17 @@ const loadStoredContacts = (username) => {
 
 const saveStoredContacts = (username, contacts) => {
   localStorage.setItem(`contacts-${username}`, JSON.stringify(contacts));
+};
+
+const secretKey = "my-secret"; // should match what's used in ChatWindow
+
+const decrypt = (text) => {
+  try {
+    const bytes = CryptoJS.AES.decrypt(text, secretKey);
+    return bytes.toString(CryptoJS.enc.Utf8);
+  } catch {
+    return "(decryption failed)";
+  }
 };
 
 
@@ -66,14 +78,16 @@ function App() {
   useEffect(() => {
     const handleIncomingMessage = (message) => {
       if (message.recipient === username && message.sender !== username) {
-        // 🟢 Show browser notification
+        const decryptedMessage = decrypt(message.message);
+
+        // 🔔 Show notification with real message text
         if (Notification.permission === "granted") {
           new Notification(`Message from ${message.sender}`, {
-            body: "(New message)",
+            body: decryptedMessage,
           });
         }
 
-        // 🟢 Auto-add sender to contacts if not present
+        // 🟢 Add sender to contact list if new (already implemented)
         setContacts((prev) => {
           const existing = prev.map((u) => u.toLowerCase());
           if (!existing.includes(message.sender.toLowerCase())) {
@@ -83,6 +97,7 @@ function App() {
         });
       }
     };
+
 
 
     socket.on("receive_message", handleIncomingMessage);
