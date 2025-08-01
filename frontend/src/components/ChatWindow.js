@@ -5,7 +5,6 @@ import CryptoJS from "crypto-js";
 function ChatWindow({ username, recipient }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const chatContainerRef = useRef(null);
   const chatEndRef = useRef(null);
   const secretKey = "my-secret";
 
@@ -16,7 +15,7 @@ function ChatWindow({ username, recipient }) {
   }, [username, recipient]);
 
   useEffect(() => {
-    scrollToBottomIfAtBottom();
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const fetchMessages = async () => {
@@ -55,23 +54,10 @@ function ChatWindow({ username, recipient }) {
     }
   };
 
-  const scrollToBottomIfAtBottom = () => {
-    const container = chatContainerRef.current;
-    const isAtBottom =
-      container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-
-    if (isAtBottom) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       {/* Scrollable Message List */}
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-2 scroll-smooth"
-      >
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((msg, idx) => {
           const isMine = msg.sender === username;
           return (

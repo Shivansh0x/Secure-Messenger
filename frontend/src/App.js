@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
-import LoginForm from "./components/LoginForm";
-import ChatSidebar from "./components/ChatSidebar";
-import ChatWindow from "./components/ChatWindow";
+// App.js – Updated with browser notification when a message is received
+import React, { useEffect, useState } from "react";
+import LoginForm from "./LoginForm";
+import MessageForm from "./MessageForm";
+import Inbox from "./Inbox";
+import ChatSidebar from "./ChatSidebar";
 import { io } from "socket.io-client";
 
 const socket = io("https://secure-messenger-backend.onrender.com");
@@ -9,99 +11,77 @@ const socket = io("https://secure-messenger-backend.onrender.com");
 function App() {
   const [username, setUsername] = useState(localStorage.getItem("username"));
   const [selectedUser, setSelectedUser] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-  // Notify backend of online user
   useEffect(() => {
-    const handleOnlineUsersUpdate = (data) => {
-      setOnlineUsers(data);
-    };
-    socket.on("update_online_users", handleOnlineUsersUpdate);
+    if (username) {
+      socket.emit("user_connected", { username });
 
-    socket.on("connect", () => {
-      if (username) {
-        socket.emit("user_connected", { username });
+      // Request browser notification permission
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    }
+  }, [username]);
+
+  useEffect(() => {
+    socket.on("update_online_users", (users) => {
+      setOnlineUsers(users);
+    });
+
+    socket.on("receive_message", (data) => {
+      setMessages((prevMessages) => [...prevMessages, data]);
+
+      // Show browser notification for new message
+      if (
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        data.sender !== username
+      ) {
+        new Notification(`New message from ${data.sender}`, {
+          body: data.message,
+          icon: "/chat-icon.png", // Optional icon
+        });
+
+        // Optional: Play notification sound
+        const notificationSound = new Audio("/notification.mp3");
+        notificationSound.play();
       }
     });
 
-    if (username) {
-      socket.emit("user_connected", { username });
-    }
-
     return () => {
-      socket.off("update_online_users", handleOnlineUsersUpdate);
-      socket.off("connect");
+      socket.off("update_online_users");
+      socket.off("receive_message");
     };
   }, [username]);
 
-  // Request browser notification permission on load
-  useEffect(() => {
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // Listen for incoming messages to show browser notification
-  useEffect(() => {
-    const handleIncomingMessage = (message) => {
-      if (message.recipient === username && message.sender !== username) {
-        if (Notification.permission === "granted") {
-          new Notification(`Message from ${message.sender}`, {
-            body: message.message,
-          });
-        }
-      }
-    };
-
-    socket.on("receive_message", handleIncomingMessage);
-
-    return () => {
-      socket.off("receive_message", handleIncomingMessage);
-    };
-  }, [username]);
+  if (!username) {
+    return <LoginForm onLogin={setUsername} />;
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950 text-white font-sans">
-      <h1 className="text-2xl font-bold p-4 bg-gray-800 border-b border-gray-700">
-        Secure Messenger
-      </h1>
-
-      {username ? (
-        <div className="flex flex-1 overflow-hidden">
-          <ChatSidebar
-            username={username}
-            selectedUser={selectedUser}
-            onSelectUser={setSelectedUser}
-            onlineUsers={onlineUsers}
-          />
-
-          <div className="flex-1 flex flex-col">
-            {selectedUser ? (
-              <>
-                <div className="px-4 py-2 border-b border-gray-700 flex items-center gap-2">
-                  <h2 className="text-xl font-semibold">
-                    Chat with {selectedUser}
-                  </h2>
-                  <span
-                    className={`h-3 w-3 rounded-full ${
-                      onlineUsers.includes(selectedUser)
-                        ? "bg-green-400"
-                        : "bg-gray-500"
-                    }`}
-                  ></span>
-                </div>
-                <ChatWindow username={username} recipient={selectedUser} />
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                Select a user from the sidebar to start chatting.
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <LoginForm onLogin={setUsername} />
-      )}
+    <div className="flex h-screen">
+      <ChatSidebar
+        username={username}
+        onSelectUser={setSelectedUser}
+        selectedUser={selectedUser}
+        onlineUsers={onlineUsers}
+      />
+      <div className="flex flex-col flex-1 bg-gray-800">
+        <Inbox
+          username={username}
+          selectedUser={selectedUser}
+          socket={socket}
+          messages={messages}
+          setMessages={setMessages}
+        />
+        <MessageForm
+          username={username}
+          selectedUser={selectedUser}
+          socket={socket}
+        />
+      </div>
     </div>
   );
 }

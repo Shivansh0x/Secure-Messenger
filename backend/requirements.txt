@@ -5,6 +5,3 @@ flask-socketio
 eventlet
 Flask-SQLAlchemy
 mysqlclient 
-PyMySQL
-pymysql
-
