@@ -5,7 +5,6 @@ import LogoutButton from "./LogoutButton";
 function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
   const [contacts, setContacts] = useState([]);
 
-  // 🔄 Fetch chat contacts on login or username change
   useEffect(() => {
     if (!username) return;
     axios
@@ -14,7 +13,6 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       .catch((err) => console.error("Failed to fetch contacts", err));
   }, [username]);
 
-  // ➕ Start a new chat with a valid user
   const handleStartNewChat = async () => {
     const newUser = prompt("Enter username to start a chat with:");
     if (!newUser || newUser.trim() === "" || newUser.trim() === username) return;
@@ -28,7 +26,7 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
         if (!contacts.includes(cleaned)) {
           setContacts((prev) => [...prev, cleaned]);
         }
-        onSelectUser(cleaned); // open chat
+        onSelectUser(cleaned);
       }
     } catch (err) {
       alert("User does not exist.");
@@ -36,8 +34,18 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-64 bg-gray-900 text-white border-r border-gray-700">
-      {/* 🔝 Top Header + New Chat Button */}
+    <div
+      style={{
+        width: "250px",
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh", // full height
+        borderRight: "1px solid #ccc",
+        boxSizing: "border-box",
+        overflow: "hidden",
+      }}
+    >
+      {/* 🔝 Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-700">
         <h2 className="text-xl font-bold">Chats</h2>
         <button
@@ -49,7 +57,7 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
         </button>
       </div>
 
-      {/* 📜 Scrollable Contact List */}
+      {/* 📜 Contact List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {contacts.map((user) => (
           <li
@@ -60,15 +68,13 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
           >
             <span className="truncate">{user}</span>
             <span
-              className={`h-3 w-3 rounded-full ${
-                onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"
-              }`}
+              className={`h-3 w-3 rounded-full ${onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"}`}
             ></span>
           </li>
         ))}
       </div>
 
-      {/* ⬇️ Logout Button */}
+      {/* ⬇️ Logout */}
       <div className="p-4 border-t border-gray-700">
         <LogoutButton
           onLogout={() => {

@@ -62,12 +62,12 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white font-sans">
-      <h1 className="text-2xl font-bold p-4 bg-gray-800 border-b border-gray-700">
+      {/* <h1 className="text-2xl font-bold p-4 bg-gray-800 border-b border-gray-700">
         Secure Messenger
-      </h1>
+      </h1> */}
 
       {username ? (
-        <div className="flex flex-1 overflow-hidden">
+        <div style={{ display: "flex", height: "100vh" }}>
           <ChatSidebar
             username={username}
             selectedUser={selectedUser}
