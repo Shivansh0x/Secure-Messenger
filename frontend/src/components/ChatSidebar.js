@@ -66,17 +66,32 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       </div>
 
       {/* 📜 Contact List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 text-white text-sm">
         {contacts.map((user) => (
           <li
             key={user}
             onClick={() => onSelectUser(user)}
-            className={`list-none flex items-center justify-between px-3 py-2 rounded-md cursor-pointer
-              ${user === selectedUser ? "bg-gray-700" : "hover:bg-gray-800"}`}
+            className={`group list-none flex items-center justify-between px-3 py-2 rounded-md cursor-pointer
+        ${user === selectedUser ? "bg-gray-700" : "hover:bg-gray-800"}`}
           >
             <span className="truncate">{user}</span>
+
+            {/* 🟥 'X' Remove Button on Hover */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // prevent selecting user
+                setContacts((prev) => prev.filter((u) => u !== user));
+              }}
+              className="ml-2 text-gray-400 hover:text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Remove from sidebar"
+            >
+              ×
+            </button>
+
+            {/* Online status dot */}
             <span
-              className={`h-3 w-3 rounded-full ${onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"}`}
+              className={`ml-2 h-2.5 w-2.5 rounded-full ${onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"
+                }`}
             ></span>
           </li>
         ))}
