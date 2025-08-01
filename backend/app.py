@@ -86,7 +86,7 @@ def chat_between_users(user1, user2):
             "sender": m.sender,
             "recipient": m.recipient,
             "message": m.message,
-            "timestamp": m.timestamp.isoformat()
+            "timestamp": m.timestamp.isoformat() + "Z"
         }
         for m in messages
     ])
@@ -99,7 +99,7 @@ def inbox(username):
             "sender": m.sender,
             "recipient": m.recipient,
             "message": m.message,
-            "timestamp": m.timestamp.isoformat()
+            "timestamp": m.timestamp.isoformat() + "Z"
         }
         for m in messages
     ])
