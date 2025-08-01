@@ -13,33 +13,43 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
       .catch((err) => console.error("Failed to fetch contacts", err));
   }, [username]);
 
-  const handleStartNewChat = async () => {
-    const newUser = prompt("Enter username to start a chat with:");
-    if (
-      !newUser ||
-      newUser.trim() === "" ||
-      newUser.trim().toLowerCase() === username.toLowerCase() // ✅ case-insensitive
-    )
-      return;
+const handleStartNewChat = async () => {
+  const input = prompt("Enter username to start a chat with:");
+  if (!input || input.trim() === "") return;
 
-    const cleaned = newUser.trim();
+  const cleaned = input.trim();
+  const cleanedLower = cleaned.toLowerCase();
+  const usernameLower = username.toLowerCase();
 
-    try {
-      const res = await axios.get(
-        `https://secure-messenger-backend.onrender.com/users/${cleaned}`
-      );
+  // 🚫 Prevent chatting with yourself
+  if (cleanedLower === usernameLower) return;
 
-      if (res.status === 200) {
-        if (!contacts.includes(cleaned)) {
-          setContacts((prev) => [...prev, cleaned]);
-        }
-        onSelectUser(cleaned);
-      }
-    } catch (err) {
-      alert("User does not exist.");
+  // 🔍 Check if user already exists in contacts (case-insensitive)
+  const existingContact = contacts.find(
+    (u) => u.toLowerCase() === cleanedLower
+  );
+
+  if (existingContact) {
+    onSelectUser(existingContact); // ✅ Open with correct case
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `https://secure-messenger-backend.onrender.com/users/${cleaned}`
+    );
+
+    if (res.status === 200 && res.data.exists) {
+      const trueCasedUsername = res.data.username || cleaned; // from DB
+
+      // ✅ Add to sidebar using correct case
+      setContacts((prev) => [...prev, trueCasedUsername]);
+      onSelectUser(trueCasedUsername);
     }
-  };
-
+  } catch (err) {
+    alert("User does not exist.");
+  }
+};
 
   return (
     <div

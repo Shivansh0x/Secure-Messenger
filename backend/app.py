@@ -106,8 +106,12 @@ def inbox(username):
 
 @app.route("/users/<username>", methods=["GET"])
 def check_user_exists(username):
-    user = User.query.filter_by(username=username).first()
-    return jsonify({"exists": True}) if user else (jsonify({"error": "User not found"}), 404)
+    user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
+    if user:
+        return jsonify({"exists": True, "username": user.username})
+    else:
+        return jsonify({"error": "User not found"}), 404
+
 
 @app.route("/contacts/<username>", methods=["GET"])
 def get_contacts(username):
