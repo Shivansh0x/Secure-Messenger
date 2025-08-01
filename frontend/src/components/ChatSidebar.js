@@ -74,28 +74,34 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers }) {
             className={`group list-none flex items-center justify-between px-3 py-2 rounded-md cursor-pointer
         ${user === selectedUser ? "bg-gray-700" : "hover:bg-gray-800"}`}
           >
-            <span className="truncate">{user}</span>
+            {/* Left side: name + online dot */}
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <span className="truncate">{user}</span>
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"
+                  }`}
+              ></span>
+            </div>
 
-            {/* 🟥 'X' Remove Button on Hover */}
+            {/* Right side: 'X' button only on hover */}
             <button
               onClick={(e) => {
-                e.stopPropagation(); // prevent selecting user
+                e.stopPropagation();
                 setContacts((prev) => prev.filter((u) => u !== user));
+                if (user === selectedUser) {
+                  onSelectUser(null);
+                }
               }}
-              className="ml-2 text-gray-400 hover:text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-gray-400 hover:text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
               title="Remove from sidebar"
             >
               ×
             </button>
-
-            {/* Online status dot */}
-            <span
-              className={`ml-2 h-2.5 w-2.5 rounded-full ${onlineUsers.includes(user) ? "bg-green-400" : "bg-gray-500"
-                }`}
-            ></span>
           </li>
         ))}
       </div>
+
+
 
       {/* ⬇️ Logout */}
       <div className="p-4 border-t border-gray-700">

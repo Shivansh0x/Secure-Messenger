@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import CryptoJS from "crypto-js";
 
@@ -8,17 +8,8 @@ function ChatWindow({ username, recipient }) {
   const chatEndRef = useRef(null);
   const secretKey = "my-secret";
 
-  useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
-  }, [username, recipient]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const fetchMessages = async () => {
+  // ✅ Wrap in useCallback to fix ESLint warning
+  const fetchMessages = useCallback(async () => {
     try {
       const res = await axios.get(
         `https://secure-messenger-backend.onrender.com/chat/${username}/${recipient}`
@@ -27,7 +18,17 @@ function ChatWindow({ username, recipient }) {
     } catch (err) {
       console.error("Failed to fetch messages", err);
     }
-  };
+  }, [username, recipient]);
+
+  useEffect(() => {
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [fetchMessages]); // ✅ clean and warning-free now
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const decrypt = (text) => {
     try {
@@ -40,15 +41,25 @@ function ChatWindow({ username, recipient }) {
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
+
     const encrypted = CryptoJS.AES.encrypt(newMessage, secretKey).toString();
+    const localMsg = {
+      sender: username,
+      recipient,
+      message: encrypted,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, localMsg]);
+    setNewMessage("");
+
     try {
       await axios.post("https://secure-messenger-backend.onrender.com/send", {
         sender: username,
         recipient,
         message: encrypted,
       });
-      setNewMessage("");
-      fetchMessages();
+      fetchMessages(); // optional: refresh after sending
     } catch (err) {
       console.error("Send failed:", err);
     }
@@ -56,7 +67,6 @@ function ChatWindow({ username, recipient }) {
 
   return (
     <div className="h-full max-h-screen flex flex-col overflow-hidden">
-      {/* Scrollable Message List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-black">
         {messages.map((msg, idx) => {
           const isMine = msg.sender === username;
@@ -83,7 +93,6 @@ function ChatWindow({ username, recipient }) {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Fixed Input Bar */}
       <div className="shrink-0 border-t border-gray-700 p-3 bg-gray-950">
         <div className="flex">
           <input
