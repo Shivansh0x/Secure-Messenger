@@ -6,4 +6,5 @@ eventlet
 Flask-SQLAlchemy
 mysqlclient 
 PyMySQL
+pymysql
 
