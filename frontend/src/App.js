@@ -6,11 +6,24 @@ import { io } from "socket.io-client";
 
 const socket = io("https://secure-messenger-backend.onrender.com");
 
+const loadStoredContacts = (username) => {
+  const data = localStorage.getItem(`contacts-${username}`);
+  return data ? JSON.parse(data) : [];
+};
+
+const saveStoredContacts = (username, contacts) => {
+  localStorage.setItem(`contacts-${username}`, JSON.stringify(contacts));
+};
+
+
 function App() {
   const [username, setUsername] = useState(localStorage.getItem("username"));
   const [selectedUser, setSelectedUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState(() =>
+    username ? loadStoredContacts(username) : []
+  );
+
 
   // Notify backend of online user
   useEffect(() => {
@@ -34,6 +47,13 @@ function App() {
       socket.off("connect");
     };
   }, [username]);
+
+  useEffect(() => {
+    if (username) {
+      saveStoredContacts(username, contacts);
+    }
+  }, [contacts, username]);
+
 
   // Request browser notification permission on load
   useEffect(() => {
@@ -89,7 +109,6 @@ function App() {
             setContacts={setContacts}
           />
 
-
           <div className="flex-1 flex flex-col">
             {selectedUser ? (
               <>
@@ -114,7 +133,13 @@ function App() {
           </div>
         </div>
       ) : (
-        <LoginForm onLogin={setUsername} />
+        <LoginForm
+          onLogin={(username) => {
+            setUsername(username);
+            setContacts(loadStoredContacts(username));
+          }}
+        />
+
       )}
     </div>
   );

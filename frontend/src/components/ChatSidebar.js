@@ -1,17 +1,17 @@
-import React, { useEffect } from "react";
+// import React, { useEffect } from "react";
 import axios from "axios";
 import LogoutButton from "./LogoutButton";
 
 function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contacts, setContacts }) {
 
 
-  useEffect(() => {
-    if (!username) return;
-    axios
-      .get(`https://secure-messenger-backend.onrender.com/contacts/${username}`)
-      .then((res) => setContacts(res.data))
-      .catch((err) => console.error("Failed to fetch contacts", err));
-  }, [username, setContacts]); // ✅ added setContacts here
+  // useEffect(() => {
+  //   if (!username) return;
+  //   axios
+  //     .get(`https://secure-messenger-backend.onrender.com/contacts/${username}`)
+  //     .then((res) => setContacts(res.data))
+  //     .catch((err) => console.error("Failed to fetch contacts", err));
+  // }, [username, setContacts]); // ✅ added setContacts here
 
 
   const handleStartNewChat = async () => {
