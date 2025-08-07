@@ -1,5 +1,4 @@
-# app.py – Flask backend with MySQL (Railway) replacing JSON files
-
+# app.py – Flask backend with MySQL (Railway)
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
@@ -10,18 +9,17 @@ import pymysql
 
 pymysql.install_as_MySQLdb()
 
-# ────── App Setup ──────
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# ────── MySQL Config (Railway) ──────
+# Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL') or \
     'mysql+pymysql://root:uMdiqLfnvXorOmXEbXTITJUMXlCkdkoI@switchback.proxy.rlwy.net:46141/railway'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ────── Online Users ──────
+# Online Users Store
 online_users = {}
 
 # ────── Models ──────
@@ -76,7 +74,7 @@ def send_message():
     db.session.add(new_msg)
     db.session.commit()
 
-    # ✅ Emit via Socket.IO
+    # Emit the message
     socketio.emit("receive_message", {
         "sender": sender,
         "recipient": recipient,
@@ -85,7 +83,6 @@ def send_message():
     })
 
     return jsonify({"status": "success"})
-
 
 @app.route("/chat/<user1>/<user2>", methods=["GET"])
 def chat_between_users(user1, user2):
@@ -103,27 +100,12 @@ def chat_between_users(user1, user2):
         for m in messages
     ])
 
-@app.route("/inbox/<username>", methods=["GET"])
-def inbox(username):
-    messages = Message.query.filter_by(recipient=username).order_by(Message.timestamp).all()
-    return jsonify([
-        {
-            "sender": m.sender,
-            "recipient": m.recipient,
-            "message": m.message,
-            "timestamp": m.timestamp.isoformat() + "Z"
-        }
-        for m in messages
-    ])
-
 @app.route("/users/<username>", methods=["GET"])
 def check_user_exists(username):
     user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
     if user:
         return jsonify({"exists": True, "username": user.username})
-    else:
-        return jsonify({"error": "User not found"}), 404
-
+    return jsonify({"error": "User not found"}), 404
 
 @app.route("/contacts/<username>", methods=["GET"])
 def get_contacts(username):
@@ -162,10 +144,9 @@ def handle_disconnect():
             break
     emit("update_online_users", list(online_users.keys()), broadcast=True)
 
-# ────── Init Tables ──────
+# ────── DB Init and Run ──────
 with app.app_context():
     db.create_all()
 
-# ────── Run ──────
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000)
