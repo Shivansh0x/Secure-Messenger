@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import LoginForm from "./components/LoginForm";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatWindow from "./components/ChatWindow";
@@ -17,17 +17,7 @@ const saveStoredContacts = (username, contacts) => {
   localStorage.setItem(`contacts-${username}`, JSON.stringify(contacts));
 };
 
-const secretKey = "my-secret"; // should match what's used in ChatWindow
-
-const decrypt = (text) => {
-  try {
-    const bytes = CryptoJS.AES.decrypt(text, secretKey);
-    return bytes.toString(CryptoJS.enc.Utf8);
-  } catch {
-    return "(decryption failed)";
-  }
-};
-
+const secretKey = "my-secret"; 
 
 function App() {
   const [username, setUsername] = useState(localStorage.getItem("username"));
@@ -37,8 +27,22 @@ function App() {
     username ? loadStoredContacts(username) : []
   );
 
+  const decryptCacheRef = useRef(new Map());
+  const decrypt = (text) => {
+    const cache = decryptCacheRef.current;
+    if (cache.has(text)) return cache.get(text);
+    let out;
+    try {
+      const bytes = CryptoJS.AES.decrypt(text, secretKey);
+      out = bytes.toString(CryptoJS.enc.Utf8);
+      if (!out) out = "(decryption failed)";
+    } catch {
+      out = "(decryption failed)";
+    }
+    cache.set(text, out);
+    return out;
+  };
 
-  // Notify backend of online user
   useEffect(() => {
     const handleOnlineUsersUpdate = (data) => {
       setOnlineUsers(data);
@@ -67,8 +71,6 @@ function App() {
     }
   }, [contacts, username]);
 
-
-  // Request browser notification permission on load
   useEffect(() => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission();
@@ -88,7 +90,7 @@ function App() {
           });
         }
 
-        // 🟢 Add sender to contact list if new (already implemented)
+        // 🟢 Add sender to contact list if new
         setContacts((prev) => {
           const existing = prev.map((u) => u.toLowerCase());
           if (!existing.includes(message.sender.toLowerCase())) {
@@ -98,8 +100,6 @@ function App() {
         });
       }
     };
-
-
 
     socket.on("receive_message", handleIncomingMessage);
 
@@ -133,10 +133,11 @@ function App() {
                     Chat with {selectedUser}
                   </h2>
                   <span
-                    className={`h-3 w-3 rounded-full ${onlineUsers.includes(selectedUser)
-                      ? "bg-green-400"
-                      : "bg-gray-500"
-                      }`}
+                    className={`h-3 w-3 rounded-full ${
+                      onlineUsers.includes(selectedUser)
+                        ? "bg-green-400"
+                        : "bg-gray-500"
+                    }`}
                   ></span>
                 </div>
                 <ChatWindow username={username} recipient={selectedUser} />
@@ -155,7 +156,6 @@ function App() {
             setContacts(loadStoredContacts(username));
           }}
         />
-
       )}
     </div>
   );

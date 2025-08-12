@@ -4,51 +4,73 @@ import CryptoJS from "crypto-js";
 import { API_BASE_URL } from "../config";
 
 function ChatWindow({ username, recipient }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]);           
+  const [pending, setPending] = useState([]);             
   const [newMessage, setNewMessage] = useState("");
   const chatEndRef = useRef(null);
   const secretKey = "my-secret";
 
-const formatTimestamp = (isoString) => {
-  const date = new Date(isoString); // ← assumed UTC, correctly parsed
-  const now = new Date();
+  const decryptCacheRef = useRef(new Map());
+  const decrypt = (text) => {
+    const cache = decryptCacheRef.current;
+    if (cache.has(text)) return cache.get(text);
+    let out;
+    try {
+      const bytes = CryptoJS.AES.decrypt(text, secretKey);
+      out = bytes.toString(CryptoJS.enc.Utf8) || "(decryption failed)";
+    } catch {
+      out = "(decryption failed)";
+    }
+    cache.set(text, out);
+    return out;
+  };
 
-  const isToday = date.toDateString() === now.toDateString();
+  const formatTimestamp = (isoString) => {
+    const date = new Date(isoString);
+    const now = new Date();
 
-  const yesterday = new Date();
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
+    const isToday = date.toDateString() === now.toDateString();
 
-  const timeString = date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: undefined, // ✅ force local user timezone
-  });
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  if (isToday) {
-    return `Today at ${timeString}`;
-  } else if (isYesterday) {
-    return `Yesterday at ${timeString}`;
-  } else {
-    const datePart = date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      timeZone: undefined, // ✅ apply here too
+    const timeString = date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: undefined,
     });
-    return `${datePart} at ${timeString}`;
-  }
-};
 
+    if (isToday) {
+      return `Today at ${timeString}`;
+    } else if (isYesterday) {
+      return `Yesterday at ${timeString}`;
+    } else {
+      const datePart = date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        timeZone: undefined,
+      });
+      return `${datePart} at ${timeString}`;
+    }
+  };
 
-
-  // ✅ Wrap in useCallback to fix ESLint warning
+  // Fetch from server
   const fetchMessages = useCallback(async () => {
     try {
       const res = await axios.get(
         `${API_BASE_URL}/chat/${username}/${recipient}`
       );
-      setMessages(res.data);
+      const serverMessages = res.data;
+
+      setPending((oldPending) =>
+        oldPending.filter(
+          (p) => !serverMessages.some((s) => s.message === p.message)
+        )
+      );
+
+      setMessages(serverMessages);
     } catch (err) {
       console.error("Failed to fetch messages", err);
     }
@@ -58,33 +80,27 @@ const formatTimestamp = (isoString) => {
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [fetchMessages]); // ✅ clean and warning-free now
+  }, [fetchMessages]);
 
+  const combined = [...messages, ...pending];
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const decrypt = (text) => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(text, secretKey);
-      return bytes.toString(CryptoJS.enc.Utf8);
-    } catch {
-      return "(decryption failed)";
-    }
-  };
+  }, [combined.length]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
     const encrypted = CryptoJS.AES.encrypt(newMessage, secretKey).toString();
+
     const localMsg = {
       sender: username,
       recipient,
       message: encrypted,
       timestamp: new Date().toISOString(),
     };
+    decryptCacheRef.current.set(encrypted, newMessage);
+    setPending((prev) => [...prev, localMsg]);
 
-    setMessages((prev) => [...prev, localMsg]);
     setNewMessage("");
 
     try {
@@ -93,34 +109,31 @@ const formatTimestamp = (isoString) => {
         recipient,
         message: encrypted,
       });
-      fetchMessages(); // optional: refresh after sending
     } catch (err) {
       console.error("Send failed:", err);
+      setPending((prev) => prev.filter((p) => p.message !== encrypted));
     }
   };
 
   return (
     <div className="h-full max-h-screen flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-black">
-        {messages.map((msg, idx) => {
+        {combined.map((msg, idx) => {
           const isMine = msg.sender === username;
           return (
             <div
-              key={idx}
+              key={`${msg.message}-${idx}`} 
               className={`flex ${isMine ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-xs px-4 py-2 rounded-lg ${isMine
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-100"
-                  }`}
+                className={`max-w-xs px-4 py-2 rounded-lg ${
+                  isMine ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"
+                }`}
               >
                 <div className="text-sm">{decrypt(msg.message)}</div>
                 <div className="text-xs text-gray-300 mt-1 text-right">
                   {formatTimestamp(msg.timestamp)}
                 </div>
-
-
               </div>
             </div>
           );
