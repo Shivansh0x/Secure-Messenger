@@ -4,7 +4,7 @@ Welcome to **Secure Messenger** — a privacy-focused, end-to-end encrypted chat
 
 ## 🚀 Try It Live
 
-👉 [Click here to use the app](https://secure-messenger-frontend.onrender.com)
+👉 [Click here to use the app](https://secure-messenger-one.vercel.app)
 
 > ⚠️ You may need to wait a few seconds for the servers to wake up if it's the first time accessing.
 

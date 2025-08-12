@@ -1,0 +1,17 @@
+---
+title: "A spark of curiosity"
+datePublished: Sat Jul 05 2025 12:42:46 GMT+0000 (Coordinated Universal Time)
+cuid: cmcq8hdvp000902l12aiv7dmp
+slug: a-spark-of-curiosity
+
+---
+
+I have always had a love for mathematics and computers very early on in school. I was introduced to the idea of programming computers to do what they want in 6th grade when we used to have extra-curricular classes for computers. There, we just started out with a programming language called QBasic. Even though the school didn’t stress much on the subject and there weren’t even examinations conducted for it, it was probably the subject I spent most time on when I got home. The first thing I did when I got home that day was ask my dad to install and learn QBasic on his laptop, and I found a tutorial series on YouTube which led me to making my first game in the language in only a month. From then on, it was clear to me that computers was something that would stick with me for a very long time. It was the seed that sprouted my interest for the subject.
+
+In the next few years, I would continue to learn more languages and would be introduced to new ideas and concepts in programming. I started out with C, learnt about procedural oriented programming fundamentals. Next, I learnt about object oriented programming and C++, probably the language I spent the most time experimenting with, and it still is my favorite language to program in. I remember being fascinated by the amount of resources available for free online that could fuel my curiosity forever and I knew I would always be hungry to learn more. During my first few high school years, I even opted for the AP Computer Science A which I was able to breeze through, due to my proficiency in C++, and learn a new language in Java.
+
+In 11th grade in school, I was given the freedom to pick subjects and Computer Science was a no brainer for me. I was introduced to Python and how convenient and easy it is to build programs with it. In my summer vacations the same year, I decided to learn front-end development as well and how to build applications with React.
+
+With the arsenal of languages I was experienced in and wanting something new to learn, I realized languages were only tools to build something useful in the real world. I at last wanted to build something that I could actually show to others, a final product, and not just another language. As I researched various topics to work on, I realized a topic which was very niche and conceptual, something not many would be able to work on without a love for the subject and something that is very much on a rise - quantum computing.
+
+This finally led me to discovering the impact of quantum computing on cryptography, being the most affected field when we do reach the era of a quantum revolution. Being someone who loves learning things practically and through application rather than just reading about it conceptually, I have decided to finally start this project to explore cryptography - a fully encrypted messenger. I also realized that such a future oriented subject is only available at very few top universities, and I hope this project further expresses my curiosity in the subject to hopefully get a chance to fuel my desire and learn more about it in them.
