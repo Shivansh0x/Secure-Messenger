@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "../config";
+import { API_BASE_URL } from "../config";
 
-const socket = io("https://secure-messenger-backend.onrender.com");
+const socket = io(SOCKET_URL);
 
 function LoginForm({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -15,7 +17,7 @@ function LoginForm({ onLogin }) {
     const endpoint = isLoginMode ? "/login" : "/register";
 
     axios
-      .post(`https://secure-messenger-backend.onrender.com${endpoint}`, {
+      .post(`${API_BASE_URL}${endpoint}`, {
         username,
         password,
       })

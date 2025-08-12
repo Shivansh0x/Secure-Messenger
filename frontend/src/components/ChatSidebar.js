@@ -1,6 +1,7 @@
 // import React, { useEffect } from "react";
 import axios from "axios";
 import LogoutButton from "./LogoutButton";
+import { API_BASE_URL } from "../config";
 
 function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contacts, setContacts }) {
 
@@ -37,7 +38,7 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contac
 
     try {
       const res = await axios.get(
-        `https://secure-messenger-backend.onrender.com/users/${cleaned}`
+        `${API_BASE_URL}/users/${cleaned}`
       );
 
       if (res.status === 200 && res.data.exists) {

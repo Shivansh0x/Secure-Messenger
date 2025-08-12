@@ -1,36 +1,52 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
-import { encryptMessage, decryptMessage } from "../crypto/aead"; // adjust if your path differs
+import CryptoJS from "crypto-js";
+import { API_BASE_URL } from "../config";
 
 function ChatWindow({ username, recipient }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [counter, setCounter] = useState(1); // simple per-session counter (anti-replay hint)
   const chatEndRef = useRef(null);
-  const passphrase = "my-secret"; // TEMP for migration; don't hardcode in production
+  const secretKey = "my-secret";
 
-  const formatTimestamp = (isoString) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    const timeString = date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
+const formatTimestamp = (isoString) => {
+  const date = new Date(isoString); // ← assumed UTC, correctly parsed
+  const now = new Date();
+
+  const isToday = date.toDateString() === now.toDateString();
+
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  const timeString = date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: undefined, // ✅ force local user timezone
+  });
+
+  if (isToday) {
+    return `Today at ${timeString}`;
+  } else if (isYesterday) {
+    return `Yesterday at ${timeString}`;
+  } else {
+    const datePart = date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      timeZone: undefined, // ✅ apply here too
     });
-    if (isToday) return `Today at ${timeString}`;
-    if (isYesterday) return `Yesterday at ${timeString}`;
-    const datePart = date.toLocaleDateString([], { month: "short", day: "numeric" });
     return `${datePart} at ${timeString}`;
-  };
+  }
+};
 
+
+
+  // ✅ Wrap in useCallback to fix ESLint warning
   const fetchMessages = useCallback(async () => {
     try {
       const res = await axios.get(
-        `https://secure-messenger-backend.onrender.com/chat/${username}/${recipient}`
+        `${API_BASE_URL}/chat/${username}/${recipient}`
       );
       setMessages(res.data);
     } catch (err) {
@@ -42,57 +58,46 @@ function ChatWindow({ username, recipient }) {
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [fetchMessages]);
+  }, [fetchMessages]); // ✅ clean and warning-free now
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const decrypt = (text) => {
+    try {
+      const bytes = CryptoJS.AES.decrypt(text, secretKey);
+      return bytes.toString(CryptoJS.enc.Utf8);
+    } catch {
+      return "(decryption failed)";
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    // Header gets bound as AAD (authenticated metadata)
-    const header = { v: 1, sender: username, recipient, ts: Date.now(), c: counter };
-
-    const encryptedRecord = await encryptMessage(passphrase, newMessage, header);
-
+    const encrypted = CryptoJS.AES.encrypt(newMessage, secretKey).toString();
     const localMsg = {
       sender: username,
       recipient,
-      message: JSON.stringify(encryptedRecord),
-      timestamp: new Date().toISOString()
+      message: encrypted,
+      timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, localMsg]);
     setNewMessage("");
-    setCounter((c) => c + 1);
 
     try {
-      await axios.post("https://secure-messenger-backend.onrender.com/send", {
+      await axios.post(`${API_BASE_URL}/send`, {
         sender: username,
         recipient,
-        message: JSON.stringify(encryptedRecord)
+        message: encrypted,
       });
-      fetchMessages();
+      fetchMessages(); // optional: refresh after sending
     } catch (err) {
       console.error("Send failed:", err);
     }
   };
-
-  function AsyncDecrypt({ raw }) {
-    const [text, setText] = useState("…");
-    useEffect(() => {
-      (async () => {
-        try {
-          const rec = JSON.parse(raw);
-          setText(await decryptMessage(passphrase, rec));
-        } catch {
-          setText("(invalid message)");
-        }
-      })();
-    }, [raw]);
-    return <>{text}</>;
-  }
 
   return (
     <div className="h-full max-h-screen flex flex-col overflow-hidden">
@@ -100,14 +105,22 @@ function ChatWindow({ username, recipient }) {
         {messages.map((msg, idx) => {
           const isMine = msg.sender === username;
           return (
-            <div key={idx} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-xs px-4 py-2 rounded-lg ${isMine ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"}`}>
-                <div className="text-sm">
-                  <AsyncDecrypt raw={msg.message} />
-                </div>
+            <div
+              key={idx}
+              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-xs px-4 py-2 rounded-lg ${isMine
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-100"
+                  }`}
+              >
+                <div className="text-sm">{decrypt(msg.message)}</div>
                 <div className="text-xs text-gray-300 mt-1 text-right">
                   {formatTimestamp(msg.timestamp)}
                 </div>
+
+
               </div>
             </div>
           );
@@ -115,14 +128,15 @@ function ChatWindow({ username, recipient }) {
         <div ref={chatEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-800 bg-gray-950">
+      <div className="shrink-0 border-t border-gray-700 p-3 bg-gray-950">
         <div className="flex">
           <input
             type="text"
+            className="flex-1 bg-gray-800 text-white p-2 rounded-l-lg border border-gray-600 focus:outline-none"
+            placeholder="Type your message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message…"
-            className="flex-1 px-4 py-2 rounded-l-lg bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
           <button
             onClick={sendMessage}
