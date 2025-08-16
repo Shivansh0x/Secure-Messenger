@@ -14,8 +14,7 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL') or \
-    'mysql+pymysql://root:uMdiqLfnvXorOmXEbXTITJUMXlCkdkoI@switchback.proxy.rlwy.net:46141/railway'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
