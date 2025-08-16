@@ -1,4 +1,3 @@
-# app.py – Flask backend with MySQL (Railway)
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
@@ -73,7 +72,6 @@ def send_message():
     db.session.add(new_msg)
     db.session.commit()
 
-    # Emit the message
     socketio.emit("receive_message", {
         "sender": sender,
         "recipient": recipient,

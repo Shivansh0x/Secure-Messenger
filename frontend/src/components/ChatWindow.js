@@ -56,7 +56,6 @@ function ChatWindow({ username, recipient }) {
     }
   };
 
-  // Fetch from server
   const fetchMessages = useCallback(async () => {
     try {
       const res = await axios.get(

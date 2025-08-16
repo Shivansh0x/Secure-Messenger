@@ -1,19 +1,8 @@
-// import React, { useEffect } from "react";
 import axios from "axios";
 import LogoutButton from "./LogoutButton";
 import { API_BASE_URL } from "../config";
 
 function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contacts, setContacts }) {
-
-
-  // useEffect(() => {
-  //   if (!username) return;
-  //   axios
-  //     .get(`https://secure-messenger-backend.onrender.com/contacts/${username}`)
-  //     .then((res) => setContacts(res.data))
-  //     .catch((err) => console.error("Failed to fetch contacts", err));
-  // }, [username, setContacts]); // ✅ added setContacts here
-
 
   const handleStartNewChat = async () => {
     const input = prompt("Enter username to start a chat with:");
@@ -23,16 +12,14 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contac
     const cleanedLower = cleaned.toLowerCase();
     const usernameLower = username.toLowerCase();
 
-    // 🚫 Prevent chatting with yourself
     if (cleanedLower === usernameLower) return;
 
-    // 🔍 Check if user already exists in contacts (case-insensitive)
     const existingContact = contacts.find(
       (u) => u.toLowerCase() === cleanedLower
     );
 
     if (existingContact) {
-      onSelectUser(existingContact); // ✅ Open with correct case
+      onSelectUser(existingContact); 
       return;
     }
 
@@ -42,9 +29,8 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contac
       );
 
       if (res.status === 200 && res.data.exists) {
-        const trueCasedUsername = res.data.username || cleaned; // from DB
+        const trueCasedUsername = res.data.username || cleaned; 
 
-        // ✅ Add to sidebar using correct case
         setContacts((prev) => [...prev, trueCasedUsername]);
         onSelectUser(trueCasedUsername);
       }
@@ -59,13 +45,12 @@ function ChatSidebar({ username, onSelectUser, selectedUser, onlineUsers, contac
         width: "250px",
         display: "flex",
         flexDirection: "column",
-        height: "100vh", // full height
+        height: "100vh", 
         borderRight: "1px solid #ccc",
         boxSizing: "border-box",
         overflow: "hidden",
       }}
     >
-      {/* 🔝 Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-700">
         <h2 className="text-xl font-bold">Chats</h2>
         <button

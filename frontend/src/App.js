@@ -77,20 +77,17 @@ function App() {
     }
   }, []);
 
-  // Listen for incoming messages to show browser notification
   useEffect(() => {
     const handleIncomingMessage = (message) => {
       if (message.recipient === username && message.sender !== username) {
         const decryptedMessage = decrypt(message.message);
 
-        // 🔔 Show notification with real message text
         if (Notification.permission === "granted") {
           new Notification(`Message from ${message.sender}`, {
             body: decryptedMessage,
           });
         }
 
-        // 🟢 Add sender to contact list if new
         setContacts((prev) => {
           const existing = prev.map((u) => u.toLowerCase());
           if (!existing.includes(message.sender.toLowerCase())) {
