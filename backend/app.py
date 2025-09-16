@@ -4,17 +4,18 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
-import pymysql
-
-pymysql.install_as_MySQLdb()
+from sqlalchemy import func
+# No MySQL imports
 
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# ────── Database configuration (PostgreSQL) ──────
+raw_db_url = os.getenv("DATABASE_URL")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = raw_db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 # Online Users Store
@@ -22,21 +23,24 @@ online_users = {}
 
 # ────── Models ──────
 class User(db.Model):
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     password = db.Column(db.String(128), nullable=False)
 
 class Message(db.Model):
+    __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(64), nullable=False)
-    recipient = db.Column(db.String(64), nullable=False)
+    sender = db.Column(db.String(64), nullable=False, index=True)
+    recipient = db.Column(db.String(64), nullable=False, index=True)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    # timezone-aware timestamp in Postgres
+    timestamp = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 # ────── Routes ──────
 @app.route("/register", methods=["POST"])
 def register():
-    data = request.json
+    data = request.json or {}
     username = data.get("username")
     password = data.get("password")
     if not username or not password:
@@ -50,7 +54,7 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.json
+    data = request.json or {}
     username = data.get("username")
     password = data.get("password")
     user = User.query.filter_by(username=username).first()
@@ -60,10 +64,13 @@ def login():
 
 @app.route("/send", methods=["POST"])
 def send_message():
-    data = request.json
-    sender = data["sender"]
-    recipient = data["recipient"]
-    message = data["message"]
+    data = request.json or {}
+    sender = data.get("sender")
+    recipient = data.get("recipient")
+    message = data.get("message")
+
+    if not sender or not recipient or not message:
+        return jsonify({"status": "error", "message": "sender, recipient, and message are required."}), 400
 
     if not User.query.filter_by(username=recipient).first():
         return jsonify({"status": "error", "message": "Recipient does not exist."}), 400
@@ -76,7 +83,7 @@ def send_message():
         "sender": sender,
         "recipient": recipient,
         "message": message,
-        "timestamp": new_msg.timestamp.isoformat() + "Z"
+        "timestamp": new_msg.timestamp.isoformat()
     })
 
     return jsonify({"status": "success"})
@@ -86,20 +93,21 @@ def chat_between_users(user1, user2):
     messages = Message.query.filter(
         ((Message.sender == user1) & (Message.recipient == user2)) |
         ((Message.sender == user2) & (Message.recipient == user1))
-    ).order_by(Message.timestamp).all()
+    ).order_by(Message.timestamp.asc()).all()
     return jsonify([
         {
             "sender": m.sender,
             "recipient": m.recipient,
             "message": m.message,
-            "timestamp": m.timestamp.isoformat() + "Z"
+            "timestamp": m.timestamp.isoformat()
         }
         for m in messages
     ])
 
 @app.route("/users/<username>", methods=["GET"])
 def check_user_exists(username):
-    user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
+    # Case-insensitive existence check
+    user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
     if user:
         return jsonify({"exists": True, "username": user.username})
     return jsonify({"error": "User not found"}), 404
@@ -115,11 +123,11 @@ def get_contacts(username):
             contacts.add(msg.sender)
         if msg.recipient != username:
             contacts.add(msg.recipient)
-    return jsonify(list(contacts))
+    return jsonify(sorted(list(contacts)))
 
 @app.route("/")
 def home():
-    return "SocketIO Server Running"
+    return "SocketIO Server Running (PostgreSQL)"
 
 # ────── SocketIO Events ──────
 @socketio.on("connect")
@@ -128,7 +136,7 @@ def handle_connect():
 
 @socketio.on("user_connected")
 def handle_user_connected(data):
-    username = data.get("username")
+    username = data.get("username") if data else None
     if username:
         online_users[username] = request.sid
         emit("update_online_users", list(online_users.keys()), broadcast=True)
